@@ -15,7 +15,7 @@ is_video = False
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
-with open("E:/AllProject/AllProject/dronetrack/styles/style1.css") as css_source:
+with open(os.path.join(os.getcwd(), "styles/style1.css")) as css_source:
     st.markdown(f"<style>{css_source.read()}</style>", unsafe_allow_html=True)
 
 frame1, frame2, frame3 = st.columns([2, 3, 2])

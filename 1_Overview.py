@@ -15,7 +15,7 @@ test_data_dir = os.path.join(os.getcwd(), "src/testdata")
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
-with open(os.path.join(css_file,"style1.css")) as css_source:
+with open(os.path.join(os.getcwd(), "styles/style1.css")) as css_source:
     st.markdown(f"<style>{css_source.read()}</style>", unsafe_allow_html=True)
 
 
