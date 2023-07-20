@@ -25,17 +25,16 @@ with frame1:
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-            st.image(Image.open("E:/AllProject/AllProject/dronetrack/src/testdata/2.jpg"), use_column_width=True,)
+            st.image(Image.open(os.path.join(os.getcwd(), "src/testdata/2.jpg")), use_column_width=True,)
         with col2:
-            st.image(Image.open("E:/AllProject/AllProject/dronetrack/src/testdata/5.jpg"), use_column_width=True)
+            st.image(Image.open(os.path.join(os.getcwd(), "src/testdata/5.jpg")), use_column_width=True)
 
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-            st.image(Image.open("E:/AllProject/AllProject/dronetrack/src/testdata/3.jpg"), use_column_width=True)
+            st.image(Image.open(os.path.join(os.getcwd(), "src/testdata/3.jpg")), use_column_width=True)
         with col2:
-            st.image(Image.open("E:/AllProject/AllProject/dronetrack/src/testdata/4.jpeg"),
-                         use_column_width=True)
+            st.image(Image.open(os.path.join(os.getcwd(), "src/testdata/4.jpeg")), use_column_width=True)
 
         # Text button with yellow text
 
