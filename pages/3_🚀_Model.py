@@ -1,7 +1,6 @@
 import io
 import os
 
-import cv2
 import streamlit as st
 from PIL import Image
 
