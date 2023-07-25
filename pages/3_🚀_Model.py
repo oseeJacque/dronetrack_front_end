@@ -1,5 +1,7 @@
 import os
+from io import BytesIO
 
+import requests
 import streamlit as st
 from PIL import Image
 
@@ -124,7 +126,10 @@ with frame2:
         if img_url == os.path.join(os.getcwd(), "src/testdata/11.png") :
             st.image(Image.open(img_url), use_column_width=True, width=100)
         else:
-            st.image(img_url, use_column_width=True, width=100)
+            response = requests.get(img_url)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content))
+            st.image(image, use_column_width=True,)
         with st.container():
             lambda_function = lambda x: 's' if x > 1 else ''
             st.write(f"{nbr} drone{lambda_function(nbr)} detecté{lambda_function(nbr)}")
