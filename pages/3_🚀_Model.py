@@ -1,17 +1,20 @@
-import io
 import os
 
 import streamlit as st
 from PIL import Image
 
 from src.config import image_path
-from src.utils.upload import send_file
+from src.utils.upload import send_file, download_video_from_url
 
 is_run = True
 image_input = Image.new("RGB", (500, 500))# Get image detect
 outputs = {} #To get detection coordonnate
 nbr = 0 #Number of object detecting
+img_url = os.path.join(os.getcwd(), "src/testdata/11.png")
+video_path = ""
 is_video = False
+error_message = ""
+csv_file_path= ""
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
@@ -64,24 +67,39 @@ with frame1:
         with st.container():
             uploaded_file = st.file_uploader("Choose image or Video", type=["jpg", "jpeg", "png", "mp4"])
             if uploaded_file is not None:
-                if uploaded_file.name.endswith("mp4"):
-                    is_video = True
-                    g = io.BytesIO(uploaded_file.read())
+                try:
+                    if uploaded_file.name.endswith("mp4"):
+                        is_video = True
+                        responses = send_file(uploaded_file)
+                        video_path =responses ["video"]
+                        video_path = video_path.replace("http://localhost:5000/", "http://13.48.57.180/")
+                        csv_file_path = responses["coordonnate"]
+                        csv_file_path = csv_file_path.replace("http://localhost:5000/", "http://13.48.57.180/")
+                        st.write(video_path)
+                        st.write(csv_file_path)
 
-                    #Save videos on local
-                    #with open(video_input_path, "wb") as video_file:
-                            #video_file.write(g.read())
+                        # Save the vidéo from url
+                        download_video_from_url(url=video_path, save_path=os.path.join(os.getcwd(), "src/upload/video.mp4"))
+                        video_file = open(os.path.join(os.getcwd(), "src/upload/video.mp4"), 'rb')
+                        video_bytes = video_file.read()
+                        st.video(video_bytes)
+                        is_run = False
 
-                    #is_run = tracking_drone_in_video()
-                else:
-                    is_video = False
-                    if uploaded_file is not None:
-                        send_file(uploaded_file.getvalue())
-                    # Save image to path source
-                    #image_input.save(image_path)
-
-                    #Call detect drone in image fonction
-                    #outputs, image_input, nbr = detect_drone_in_image(image_path)
+                        #is_run = tracking_drone_in_video()
+                    else:
+                        is_video = False
+                        if uploaded_file is not None:
+                            responses = send_file(uploaded_file)
+                            if responses is None:
+                                error_message = "No drone detect in your file "
+                            else:
+                                outputs = responses["coordinates"]
+                                nbr = responses["num_objects"]
+                                img_url = responses["image"]
+                                img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
+                except Exception as e:
+                    print("Unable to open the video:", e)
+                    error_message = "No drone detect in your file "
 
 
 
@@ -94,12 +112,19 @@ with frame2:
         div_height = 500
         if not is_run:
             st.write(f"<div style='width: {div_width}px; height: {div_height}px;'>", unsafe_allow_html=True)
-            #st.video(video_path)
+            if video_path == "":
+                st.write(error_message)
+            else:
+                pass
+                #st.video(video_path)
             st.write("</div>", unsafe_allow_html=True)
         else:
             st.balloons()
     else:
-        st.image(image_input, use_column_width=True, width=100)
+        if img_url == os.path.join(os.getcwd(), "src/testdata/11.png") :
+            st.image(Image.open(img_url), use_column_width=True, width=100)
+        else:
+            st.image(img_url, use_column_width=True, width=100)
         with st.container():
             lambda_function = lambda x: 's' if x > 1 else ''
             st.write(f"{nbr} drone{lambda_function(nbr)} detecté{lambda_function(nbr)}")
@@ -108,7 +133,7 @@ with frame2:
     # Column 3
 with frame3:
         # Affichage des données scrollables dans la colonne
-    with st.expander("Données scrollables"):
+    with st.expander("Drone coordinates"):
 
         st.write(outputs)
 
