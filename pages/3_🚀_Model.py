@@ -1,22 +1,25 @@
 import os
 from io import BytesIO
+import pandas as pd
 
+import cv2
 import requests
 import streamlit as st
 from PIL import Image
 
 from src.config import image_path
 from src.utils.upload import send_file, download_video_from_url
+from src.utils.utils import save_csv_file
 
 is_run = True
 image_input = Image.new("RGB", (500, 500))# Get image detect
 outputs = {} #To get detection coordonnate
 nbr = 0 #Number of object detecting
 img_url = os.path.join(os.getcwd(), "src/testdata/11.png")
-video_path = ""
+video_url = ""
 is_video = False
 error_message = ""
-csv_file_path= ""
+csv_file_url = ""
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
@@ -73,18 +76,16 @@ with frame1:
                     if uploaded_file.name.endswith("mp4"):
                         is_video = True
                         responses = send_file(uploaded_file)
-                        video_path =responses ["video"]
+                        video_path = responses["video"]
                         video_path = video_path.replace("http://localhost:5000/", "http://13.48.57.180/")
+
+                        # Save csv file
                         csv_file_path = responses["coordonnate"]
-                        csv_file_path = csv_file_path.replace("http://localhost:5000/", "http://13.48.57.180/")
-                        st.write(video_path)
-                        st.write(csv_file_path)
+                        csv_file_url = csv_file_path.replace("http://localhost:5000/", "http://13.48.57.180/")
 
                         # Save the vidéo from url
-                        download_video_from_url(url=video_path, save_path=os.path.join(os.getcwd(), "src/upload/video.mp4"))
-                        video_file = open(os.path.join(os.getcwd(), "src/upload/video.mp4"), 'rb')
-                        video_bytes = video_file.read()
-                        st.video(video_bytes)
+                        if download_video_from_url(url=video_path, save_path=os.path.join(os.getcwd(), "src/upload/video.mp4")):
+                            error_message = "No drone detect in your file "
                         is_run = False
 
                         #is_run = tracking_drone_in_video()
@@ -117,8 +118,37 @@ with frame2:
             if video_path == "":
                 st.write(error_message)
             else:
-                pass
-                #st.video(video_path)
+                st.video(video_path)
+                # Display coordonnate of object detect
+                cap = cv2.VideoCapture(video_path)
+                data = pd.read_csv(csv_file_url)
+                ret, frame = cap.read()
+                frame_counter = 0
+
+                try:
+                    while ret:
+                        # st.image(frame)
+                        condition = data["Frame"] == frame_counter + 1
+                        data_by_frame = data.loc[condition]
+                        for index, row in data_by_frame.iterrows():
+                            output = {
+                                'x': row['X1'],
+                                'y': row['Y1'],
+                                'w': row['X2'],
+                                'h': row['Y2'],
+                                'confidence': row['Score'],
+                                'class': "drone"
+                            }
+                            outputs["predictions"].append(output)
+                            st.write(outputs)
+                        ret, frame = cap.read()
+
+                        frame_counter += 1
+
+                    cap.release()
+                    cv2.destroyAllWindows()
+                except Exception as e:
+                    print(e)
             st.write("</div>", unsafe_allow_html=True)
         else:
             st.balloons()
