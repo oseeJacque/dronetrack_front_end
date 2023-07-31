@@ -1,5 +1,9 @@
+import io
 import os
+import tempfile
 from io import BytesIO
+
+import numpy as np
 import pandas as pd
 
 import cv2
@@ -11,15 +15,18 @@ from src.config import image_path
 from src.utils.upload import send_file, download_video_from_url
 from src.utils.utils import save_csv_file
 
+
 is_run = True
 image_input = Image.new("RGB", (500, 500))# Get image detect
 outputs = {} #To get detection coordonnate
 nbr = 0 #Number of object detecting
-img_url = os.path.join(os.getcwd(), "src/testdata/11.png")
+img_url = ""
 video_url = ""
 is_video = False
-error_message = ""
+video_path = ""
+error_message = "Something is rong"
 csv_file_url = ""
+
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
@@ -72,27 +79,19 @@ with frame1:
         with st.container():
             uploaded_file = st.file_uploader("Choose image or Video", type=["jpg", "jpeg", "png", "mp4"])
             if uploaded_file is not None:
+                st.session_state["image_path"] = ""
                 try:
                     if uploaded_file.name.endswith("mp4"):
                         is_video = True
-                        responses = send_file(uploaded_file)
-                        video_path = responses["video"]
-                        video_path = video_path.replace("http://localhost:5000/", "http://13.48.57.180/")
+                        # Write the file to a temporary location to read with OpenCV
+                        with open("temp.mp4", "wb") as f:
+                            f.write(uploaded_file.getbuffer())
 
-                        # Save csv file
-                        csv_file_path = responses["coordonnate"]
-                        csv_file_url = csv_file_path.replace("http://localhost:5000/", "http://13.48.57.180/")
-
-                        # Save the vidéo from url
-                        if download_video_from_url(url=video_path, save_path=os.path.join(os.getcwd(), "src/upload/video.mp4")):
-                            error_message = "No drone detect in your file "
-                        is_run = False
-
-                        #is_run = tracking_drone_in_video()
-                    else:
-                        is_video = False
-                        if uploaded_file is not None:
-                            responses = send_file(uploaded_file)
+                        cap = cv2.VideoCapture("temp.mp4")
+                        ret, frame = cap.read()
+                        while ret:
+                            image = Image.fromarray(frame)
+                            responses = send_file(image.tobytes())
                             if responses is None:
                                 error_message = "No drone detect in your file "
                             else:
@@ -100,69 +99,63 @@ with frame1:
                                 nbr = responses["num_objects"]
                                 img_url = responses["image"]
                                 img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
+
+                    else:
+                        is_video = False
+
+                        responses = send_file(uploaded_file)
+                        if responses is None:
+                            error_message = "No drone detect in your file "
+                        else:
+                            outputs = responses["coordinates"]
+                            nbr = responses["num_objects"]
+                            img_url = responses["image"]
+                            img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
                 except Exception as e:
-                    print("Unable to open the video:", e)
                     error_message = "No drone detect in your file "
+            else:
+                if st.session_state["image_path"] != "":
+                    #image = Image.open(st.session_state["image_path"])
+                    #image_bytes = io.BytesIO()
+                    #image.save(image_bytes, format="PNG")
+
+                    pil_image = Image.open(st.session_state["image_path"]).convert("L")
+                    image_array = np.array(pil_image, "uint8")
+                    data = {'image_data': image_array.tolist()}
+                    response = requests.post(' http://13.48.57.180/process_image', json=data)
+
+                    if response is None or response.status_code == 500:
+                        error_message = "No drone detect in your file "
+                    else:
+                        data = response.json()
+                        outputs = data["coordinates"]
+                        nbr = data["num_objects"]
+                        img_url = data["image"]
+                        img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
 
 
 
         #Dispplay image detecting in second frame
         # Column 2
 with frame2:
-    if is_video:
+    #if is_video:
             # Set the width and height of the div
-        div_width = 500
-        div_height = 500
-        if not is_run:
-            st.write(f"<div style='width: {div_width}px; height: {div_height}px;'>", unsafe_allow_html=True)
-            if video_path == "":
-                st.write(error_message)
-            else:
-                st.video(video_path)
-                # Display coordonnate of object detect
-                cap = cv2.VideoCapture(video_path)
-                data = pd.read_csv(csv_file_url)
-                ret, frame = cap.read()
-                frame_counter = 0
+        #div_width = 500
+        #div_height = 500
 
-                try:
-                    while ret:
-                        # st.image(frame)
-                        condition = data["Frame"] == frame_counter + 1
-                        data_by_frame = data.loc[condition]
-                        for index, row in data_by_frame.iterrows():
-                            output = {
-                                'x': row['X1'],
-                                'y': row['Y1'],
-                                'w': row['X2'],
-                                'h': row['Y2'],
-                                'confidence': row['Score'],
-                                'class': "drone"
-                            }
-                            outputs["predictions"].append(output)
-                            st.write(outputs)
-                        ret, frame = cap.read()
-
-                        frame_counter += 1
-
-                    cap.release()
-                    cv2.destroyAllWindows()
-                except Exception as e:
-                    print(e)
-            st.write("</div>", unsafe_allow_html=True)
-        else:
-            st.balloons()
+    #else:
+    if img_url == "":
+        if st.session_state["image_path"] == os.path.join(os.getcwd(), "src/testdata/11.png"):
+            st.image(Image.open(st.session_state["image_path"]), use_column_width=True, width=100)
+            #st.write(error_message)
     else:
-        if img_url == os.path.join(os.getcwd(), "src/testdata/11.png") :
-            st.image(Image.open(img_url), use_column_width=True, width=100)
-        else:
-            response = requests.get(img_url)
-            response.raise_for_status()
-            image = Image.open(BytesIO(response.content))
-            st.image(image, use_column_width=True,)
-        with st.container():
-            lambda_function = lambda x: 's' if x > 1 else ''
-            st.write(f"{nbr} drone{lambda_function(nbr)} detecté{lambda_function(nbr)}")
+        response = requests.get(img_url)
+        response.raise_for_status()
+        image = Image.open(BytesIO(response.content))
+        st.image(image, use_column_width=True,)
+    with st.container():
+        lambda_function = lambda x: 's' if x > 1 else ''
+        st.write(f"{nbr} drone{lambda_function(nbr)} detecté{lambda_function(nbr)}")
 
     #Display  image detect coordonnate
     # Column 3
@@ -171,5 +164,3 @@ with frame3:
     with st.expander("Drone coordinates"):
 
         st.write(outputs)
-
-

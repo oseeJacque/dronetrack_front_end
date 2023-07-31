@@ -6,10 +6,13 @@ from PIL import Image
 st.set_page_config(
 page_title="Multipage App",
     page_icon="👋",
-layout="wide"
+layout="wide",
 )
-test_data_dir = os.path.join(os.getcwd(), "src/testdata")
 
+
+test_data_dir = os.path.join(os.getcwd(), "src/testdata")
+if "image_path" not in st.session_state:
+    st.session_state["image_path"] = ""
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
@@ -31,7 +34,11 @@ with open(os.path.join(os.getcwd(), "styles/style1.css")) as css_source:
                 img = Image.open(image_path)
                 img_resized = img.resize(image_size)
                 # Afficher l'image redimensionnée dans la colonne correspondante
-                columns[i % 8].image(img_resized, use_column_width=True)
-                # Afficher le nom de l'image en bas de celle-ci
+                col = columns[i % 8]
+                col.image(img_resized, use_column_width=True)
                 image_name = os.path.basename(image_path)
-                columns[i % 8].caption(image_name,)
+                button_label = f"Used {image_name}"
+                if col.button(button_label):
+                    # Lorsque le bouton est cliqué, définir l'image_path et rediriger vers la page "model"
+                    st.session_state["image_path"] = image_path
+                    st.experimental_rerun()

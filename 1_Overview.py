@@ -11,7 +11,7 @@ page_title="Multipage App",
 layout="wide"
 )
 test_data_dir = os.path.join(os.getcwd(), "src/testdata")
-
+st.session_state["image_path"] = os.path.join(os.getcwd(), "src/testdata/11.png")
 with st.sidebar:
     st.sidebar.image(Image.open(os.path.join(os.getcwd(), "src/testdata/13.jpg")), use_column_width=True, width=st.sidebar.width)
 
