@@ -98,7 +98,7 @@ with frame1:
                                 outputs = responses["coordinates"]
                                 nbr = responses["num_objects"]
                                 img_url = responses["image"]
-                                img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
+                                #img_url = img_url.replace("http://13.48.57.180/","http://127.0.0.1:5000/")
 
                     else:
                         is_video = False
@@ -110,7 +110,7 @@ with frame1:
                             outputs = responses["coordinates"]
                             nbr = responses["num_objects"]
                             img_url = responses["image"]
-                            img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
+                            img_url = img_url.replace("http://127.0.0.1:5000/", "http://13.48.57.180/")
                 except Exception as e:
                     error_message = "No drone detect in your file "
             else:
@@ -122,7 +122,7 @@ with frame1:
                     pil_image = Image.open(st.session_state["image_path"]).convert("L")
                     image_array = np.array(pil_image, "uint8")
                     data = {'image_data': image_array.tolist()}
-                    response = requests.post(' http://13.48.57.180/process_image', json=data)
+                    response = requests.post('http://127.0.0.1:5000/process_image', json=data)
 
                     if response is None or response.status_code == 500:
                         error_message = "No drone detect in your file "
@@ -131,7 +131,9 @@ with frame1:
                         outputs = data["coordinates"]
                         nbr = data["num_objects"]
                         img_url = data["image"]
-                        img_url = img_url.replace("http://localhost:5000/", "http://13.48.57.180/")
+                        print("elooooooooooooooooooooooooo")
+                        print(img_url)
+                        #img_url = img_url.replace("http://127.0.0.1:5000/", "http://13.48.57.180/")
 
 
 
@@ -149,6 +151,7 @@ with frame2:
             st.image(Image.open(st.session_state["image_path"]), use_column_width=True, width=100)
             #st.write(error_message)
     else:
+        print(img_url)
         response = requests.get(img_url)
         response.raise_for_status()
         image = Image.open(BytesIO(response.content))

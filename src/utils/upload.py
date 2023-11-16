@@ -4,7 +4,7 @@ import requests
 def send_file(file):
 
     #http://13.48.57.180
-    url = "http://13.48.57.180/detect/upload"  # URL de l'API pour envoyer le fichier
+    url = "http://127.0.0.1:5000/detect/upload"  # URL de l'API pour envoyer le fichier
     try:
         files = {'file': file}
         response = requests.post(url, files=files)  # Envoie la requête POST avec le contenu du fichier
