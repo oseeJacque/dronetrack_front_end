@@ -1,11 +1,17 @@
 import cv2
 import requests
 
-def send_file(file):
+def send_file(file, is_video= False):
 
     #http://13.48.57.180
     url = "http://127.0.0.1:5000/detect/upload"  # URL de l'API pour envoyer le fichier
+    file_path= "temp.mp4"
     try:
+        if is_video:
+            with open(file_path, 'rb') as file:
+                files = {'file': file}
+                response = requests.post(url, files=files)  # Envoie la requête POST avec le contenu du fichier
+                return response.json()
         files = {'file': file}
         response = requests.post(url, files=files)  # Envoie la requête POST avec le contenu du fichier
         return response.json()  # Renvoie la réponse du serveur (si nécessaire)
@@ -27,6 +33,7 @@ def download_video_from_url(url, save_path):
     except requests.exceptions.RequestException as e:
         print(f"Une erreur est survenue lors du téléchargement : {e}")
         return False
+
 
 def convert_frame_to_png(frame):
     _, encoded_frame = cv2.imencode(".png", frame)

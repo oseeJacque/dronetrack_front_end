@@ -6,7 +6,7 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 
-#import cv2
+import cv2
 import requests
 import streamlit as st
 from PIL import Image
@@ -86,20 +86,18 @@ with frame1:
                         # Write the file to a temporary location to read with OpenCV
                         with open("temp.mp4", "wb") as f:
                             f.write(uploaded_file.getbuffer())
+                        responses = send_file(uploaded_file, is_video)
 
-                        cap = cv2.VideoCapture("temp.mp4")
-                        ret, frame = cap.read()
-                        while ret:
-                            image = Image.fromarray(frame)
-                            responses = send_file(image.tobytes())
-                            if responses is None:
-                                error_message = "No drone detect in your file "
-                            else:
-                                outputs = responses["coordinates"]
-                                nbr = responses["num_objects"]
-                                img_url = responses["image"]
-                                #img_url = img_url.replace("http://13.48.57.180/","http://127.0.0.1:5000/")
-
+                        # Vérifier si la réponse n'est pas vide
+                        if responses and 'video' in responses:
+                            # Télécharger la vidéo dans le fichier temporaire
+                            with open("video.mp4", "wb") as f:
+                                video_url = responses['video']
+                                #print("We are hererrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+                                #video_content = requests.get(video_url).content
+                                #print("Amazinnnnnnnnnnnnnnnnnnnnnnnnnnnn")
+                                #f.write(video_content)
+                        
                     else:
                         is_video = False
 
@@ -138,24 +136,39 @@ with frame1:
 
 
         #Dispplay image detecting in second frame
-        # Column 2
+        
+# Column 2
 with frame2:
-    #if is_video:
-            # Set the width and height of the div
-        #div_width = 500
-        #div_height = 500
+    if is_video:
 
-    #else:
-    if img_url == "":
-        if st.session_state["image_path"] == os.path.join(os.getcwd(), "src/testdata/11.png"):
-            st.image(Image.open(st.session_state["image_path"]), use_column_width=True, width=100)
-            #st.write(error_message)
+    # Afficher la vidéo depuis le fichier temporaire
+        st.video(video_url)
+        #st.write(video_content)
+        #cap = cv2.VideoCapture("temp.mp4")
+        #ret, frame = cap.read()
+        #while ret:
+            #image = Image.fromarray(frame)
+            #responses = send_file(image.tobytes())
+            #if responses is None:
+                #error_message = "No drone detect in your file "
+            #else:
+                #outputs = responses["coordinates"]
+                #nbr = responses["num_objects"]
+                #img_url = responses["image"]
+                #img_url = img_url.replace("http://13.48.57.180/","http://127.0.0.1:5000/")
+
+
     else:
-        print(img_url)
-        response = requests.get(img_url)
-        response.raise_for_status()
-        image = Image.open(BytesIO(response.content))
-        st.image(image, use_column_width=True,)
+        if img_url == "":
+            if st.session_state["image_path"] == os.path.join(os.getcwd(), "src/testdata/11.png"):
+                st.image(Image.open(st.session_state["image_path"]), use_column_width=True, width=100)
+                #st.write(error_message)
+        else:
+            print(img_url)
+            response = requests.get(img_url)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content))
+            st.image(image, use_column_width=True,)
     with st.container():
         lambda_function = lambda x: 's' if x > 1 else ''
         st.write(f"{nbr} drone{lambda_function(nbr)} detecté{lambda_function(nbr)}")
